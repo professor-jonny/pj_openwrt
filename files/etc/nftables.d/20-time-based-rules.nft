@@ -1,0 +1,6 @@
+chain time_rule_fix {
+     type filter hook forward priority -1
+     iifname "br-adults_lan" counter jump forward_adults_zone
+     iifname "br-kids_lan" counter jump forward_kids_zone
+     iifname "wan" counter jump forward_wan_zone
+}
