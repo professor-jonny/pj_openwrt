@@ -23,7 +23,7 @@ image usable to migrate from a vendor stock firmware to OpenWrt, try the
 If your device is supported, please follow the **Info** link to see install
 instructions or consult the support resources listed below.
 
-## 
+##
 
 An advanced user may require additional or specific package. (Toolchain, SDK, ...) For everything else than simple firmware download, try the wiki download page:
 
@@ -106,3 +106,61 @@ For a list of supported devices see the [OpenWrt Hardware Database](https://open
 ## License
 
 OpenWrt is licensed under GPL-2.0
+
+### Fork Information
+
+This Fork is for Wallys devices supporting.
+Currently, Following boards are supported (based on Openwrt master (21.02 at the time of editing this)
+DR531
+DR342
+DR344
+DR4029/DR4028 Nor+Nand flash.
+
+### Manufacture Instalation Procedures
+
+Below is the information on the uart of the DR4029 board it is necessary to have a serial adaptor to update the partition layout to install OpenWrt initially afterwards you may try to use sysupgade images but I have had the odd brick.
+
+you will need a terminal program such as SmarTTY to update the factory firmware
+The serial setting are 115200 8,n,1
+
+you will also need a tftp server for uboot to get the upgrade files onto the device.
+
+![Wallys_DR4029_uart](include/dr4029uart.png)
+
+### How to update openwrt firmware  from factory firmware
+
+1. download the firmware from https://github.com/professor-jonny/images/blob/main/wallys2openwrt.img
+2. setup your tftp server and copy the file above into the server directory and start it.
+Run the following commands from your uboot terminal: (you can press any key to interrupt boot upon power up of the device)
+3. tftpboot 0x84000000 wallys2openwrt.img
+4. imgaddr=0x84000000 && source $imgaddr:script
+5. reset
+tftpboot 0x84000000 wallys2openwrt.img
+
+after above steps , we can run the following command to update openwrt firmware
+you can find the latest prebuilt firmware on my repo here https://github.com/professor-jonny/images
+
+1. copy the prebuilt firmware to your tftp server
+Run the following commands from your uboot terminal:
+2. tftpboot 0x84000000 openwrt-ipq40xx-generic-wallystech_dr40x9-squashfs-nand-factory.ubi
+3. nand device 0
+4. nand erase 0x0 0x8000000
+5. nand write 0x84000000 0x0 0x4000000
+6. reset
+
+### update script Information
+
+I have created an update script you can Run `./update_script` to automatically download new sources and feeds and update the config. note this will delete files in your build directory you could stash them or back them up prior to running the update_script if you have made local changes.
+
+### notes
+
+This fork has been set up with my personal settings for me and my family with apps I find useful in my home environment.
+
+The default password is `asdf1234` for both the wifi and root access to OpenWrt.
+
+The dr40x9 device came factory with differing nand and ram sizes and I cant guarantee compatibility with each device as my board may not have the same config as your one my board has 128mb and it works for me.
+
+There is some weirdness in uboot and when an image is flashed proper partition size is not passed or updated and images are not correctly written to the whole nand if they excede the static layout.
+the loader was designed for QSDK images and to work around this issue openwrt is only writen to the first 64mb.
+
+Possibly writing a MIBIB partition dump from another model with a larger flash may allow one to extend the partition size by modifying the DTS file.

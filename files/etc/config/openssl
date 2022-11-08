@@ -1,0 +1,18 @@
+
+config engine 'afalg'
+	option enabled '1'
+
+config engine 'gost'
+	option enabled '1'
+
+config provider 'legacy'
+	option enabled '1'
+
+config engine 'afalg'
+	option enabled '1'
+
+config engine 'gost'
+	option enabled '1'
+
+config provider 'legacy'
+	option enabled '1'

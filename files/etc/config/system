@@ -1,0 +1,23 @@
+
+config system
+	option hostname 'OpenWrt'
+	option ttylogin '0'
+	option log_size '64'
+	option urandom_seed '0'
+	option zonename 'Pacific/Auckland'
+	option timezone 'NZST-12NZDT,M9.5.0,M4.1.0/3'
+	option log_proto 'udp'
+	option conloglevel '8'
+	option cronloglevel '5'
+	option compat_version '1.1'
+
+config timeserver 'ntp'
+	list server '0.openwrt.pool.ntp.org'
+	list server '1.openwrt.pool.ntp.org'
+	list server '2.openwrt.pool.ntp.org'
+	list server '3.openwrt.pool.ntp.org'
+
+config gpio_switch 'sim_card_select'
+	option name 'SIM card select'
+	option gpio_pin '423'
+	option value '0'
