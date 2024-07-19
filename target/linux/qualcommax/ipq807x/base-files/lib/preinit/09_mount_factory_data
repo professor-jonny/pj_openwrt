@@ -7,6 +7,13 @@ preinit_mount_factory_data() {
 	. /lib/functions/system.sh
 
 	case $(board_name) in
+	tplink,deco-x80-5g)
+		mtd_path=$(find_mtd_chardev "factory_data")
+		ubiattach --dev-path="$mtd_path" --devn=1
+		mkdir /tmp/factory_data
+		mount -o ro,noatime -t ubifs /dev/ubi1_0 /tmp/factory_data
+		;;
+
 	tplink,eap660hd-v1)
 		mtd_path=$(find_mtd_chardev "factory_data")
 		ubiattach --dev-path="$mtd_path" --devn=1
