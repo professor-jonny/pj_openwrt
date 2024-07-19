@@ -1,0 +1,19 @@
+#!/bin/sh
+
+preinit_mount_factory_partitions() {
+
+	case $(board_name) in
+	tplink,deco-x80-5g)
+
+		ubiattach --dev-path=/dev/mtd15 --devn=1
+		ubiattach --dev-path=/dev/mtd16 --devn=2
+		sleep 1 // sleep is required as ubi attatch exits before partition it is fully initilised
+		mkdir /tmp/factory_data
+		mkdir /tmp/runtime_data
+		mount -o ro,noatime -t ubifs ubi1:ubi_factory_data /tmp/factory_data
+		mount -o ro,noatime -t ubifs ubi2:ubi_runtime_data /tmp/runtime_data
+		;;
+	esac
+}
+
+boot_hook_add preinit_main preinit_mount_factory_partitions
