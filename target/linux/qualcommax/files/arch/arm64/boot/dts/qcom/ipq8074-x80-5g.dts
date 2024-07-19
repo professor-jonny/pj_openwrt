@@ -1,0 +1,410 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+/* Copyright (c) 2022, Robert Marko <robimarko@gmail.com> */
+/* altered by Jonathan Brophy <professor_jonny@hotmail.com> */
+
+/dts-v1/;
+
+#include "ipq8074.dtsi"
+#include "ipq8074-hk-cpu.dtsi"
+#include "ipq8074-ess.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "tplink x80-5g";
+	compatible = "tplink,x80-5g", "qcom,ipq8074";
+
+	aliases {
+		/*
+		 * Aliases as required by u-boot
+		 * to patch MAC addresses
+		 */
+		ethernet0 = &dp5;
+		ethernet1 = &dp6_syn;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs-append = " root=/dev/ubiblock0_1";
+	};
+
+	modem {
+		compatible = "gpio-modem";
+		pinctrl-0 = <&modem_pins>;
+		pinctrl-names = "default";
+
+		w_disable {
+			label = "w_disable";
+			gpios = <&tlmm 35 GPIO_ACTIVE_HIGH>;
+		};
+
+		modem-reset {
+			label = "modem_reset";
+			gpios = <&tlmm 29 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+		antennas {
+		compatible = "gpio-antenna";
+		pinctrl-0 = <&antenna_pins>;
+		pinctrl-names = "default";
+
+		ext_antenna_en {
+			label = "ext_antenna_en";
+			gpios = <&tlmm 56 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		pinctrl-0 = <&button_pins>;
+		pinctrl-names = "default";
+
+		button@1 {
+			label = "reset";
+			gpios = <&tlmm 27 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+		};
+	};
+
+	led_spi {
+		compatible = "spi-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sck-gpios = <&tlmm 18 GPIO_ACTIVE_HIGH>;
+		mosi-gpios = <&tlmm 19 GPIO_ACTIVE_HIGH>;
+
+		led_gpio: led_gpio@0 {
+			compatible = "fairchild,74hc595";
+			reg = <0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			registers-number = <2>;
+			enable-gpios = <&tlmm 20 GPIO_ACTIVE_HIGH>;
+			spi-max-frequency = <1000000>;
+		};
+	};
+
+	phy-leds {
+		compatible = "gpio-leds";
+
+		led_wifi_son_green: led0 {
+			gpios = <&led_gpio 0 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_wifi_son_orange: led1 {
+			gpios = <&led_gpio 1 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_ORANGE>;
+		};
+
+		led_wifi_son_blue: led2 {
+			gpios = <&led_gpio 2 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+		};
+
+		led_2g: led3 {
+			gpios = <&led_gpio 3 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_5gl: led4 {
+			gpios = <&led_gpio 4 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_5gh: led5 {
+			gpios = <&led_gpio 5 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_lan: led6 {
+			gpios = <&led_gpio 6 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_wan: led7 {
+			gpios = <&led_gpio 7 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			linux,default-trigger = "none";
+		};
+
+		led_10g_link: led8 {
+			gpios = <&led_gpio 8 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_sfp: led9 {
+			gpios = <&led_gpio 9 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led_bt: led10 {
+			gpios = <&led_gpio 10 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led11 {
+			gpios = <&led_gpio 11 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+
+		led12 {
+			gpios = <&led_gpio 12 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		pinctrl-0 = <&led_pins>;
+		pinctrl-names = "default";
+
+		led_system_green: green {
+			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_GREEN>;/* pulsing  green updating firmware, solid green connected to 4G*/
+			default-state = "on";
+		};
+
+		led_system_red: red {
+			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_RED>; /* pulsing  red disconnected from Wan, solid red error*/
+			default-state = "on";
+		};
+
+		led_system_blue: blue {
+			gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
+			color = <LED_COLOR_ID_BLUE>; /* pulsing  blue is ready for setup or wps in in progress*/
+		};
+	};
+
+	fans {
+		compatible = "gpio-fan";
+		pinctrl-0 = <&fan_pins>;
+		pinctrl-names = "default";
+
+		fan1 {
+			label = "fan1";
+			gpios = <&tlmm 40 GPIO_ACTIVE_HIGH>;
+		};
+
+		fan2 {
+			label = "fan2";
+			gpios = <&tlmm 41 GPIO_ACTIVE_HIGH>;
+		};
+
+		fan3 {
+			label = "fan3";
+			gpios = <&tlmm 42 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&tlmm {
+	button_pins: button_pins {
+		pins = "gpio27";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	fan_pins: fan_pins {
+		mux {
+			pins = "gpio40", "gpio41", "gpio42";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	antenna_pins: antenna_pins {
+		ext_antenna_en {
+			pins = "gpio56";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	modem_pins: modem_pins {
+		modem_reset {
+			pins = "gpio29";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+
+		w_disable {
+			pins = "gpio55";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	led_pins: led_pins {
+		pins = "gpio50", "gpio51", "gpio52";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+	};
+
+	mdio_pins: mdio-pins {
+		mdc {
+			pins = "gpio68";
+			function = "mdc";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+
+		mdio {
+			pins = "gpio69";
+			function = "mdio";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+};
+
+&blsp1_uart5 {
+	status = "okay";
+};
+
+&cryptobam {
+	status = "okay";
+};
+
+&crypto {
+	status = "okay";
+};
+
+&prng {
+	status = "okay";
+};
+
+&qpic_bam {
+	status = "okay";
+};
+
+&qpic_nand {
+	status = "okay";
+
+	nand@0 {
+		reg = <0>;
+		nand-ecc-strength = <4>;
+		nand-ecc-step-size = <512>;
+		nand-bus-width = <8>;
+
+		partitions {
+			compatible = "qcom,smem-part";
+		};
+	};
+};
+
+&qusb_phy_0 {
+	status = "okay";
+};
+
+&ssphy_0 {
+	status = "okay";
+};
+
+&usb_0 {
+	status = "okay";
+};
+
+&qusb_phy_1 {
+	status = "okay"; /* ? */
+};
+
+&ssphy_1 {
+	status = "okay"; /* ? */
+};
+
+&usb_1 {
+	status = "okay"; /* ? */
+};
+
+&mdio {
+	status = "okay";
+
+	pinctrl-0 = <&mdio_pins>;
+	pinctrl-names = "default";
+	reset-gpios = <&tlmm 37 GPIO_ACTIVE_LOW>;
+
+	qca8033: ethernet-phy@4 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x4>;
+	};
+
+	qca8081: ethernet-phy@28 {
+		compatible = "ethernet-phy-id004d.d101";
+		reg = <28>;
+		reset-deassert-us = <10000>;
+		reset-gpios = <&tlmm 44 GPIO_ACTIVE_LOW>;
+
+		leds {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			led@0 {
+				reg = <0>;
+				color = <LED_COLOR_ID_GREEN>;
+				function = LED_FUNCTION_WAN;
+				default-state = "keep";
+			};
+
+			led@1 {
+				reg = <1>;
+				color = <LED_COLOR_ID_YELLOW>;
+				function = LED_FUNCTION_WAN;
+				default-state = "keep";
+			};
+		};
+	};
+};
+
+
+&switch {
+	status = "okay";
+
+	switch_lan_bmp = <ESS_PORT6>; /* lan port bitmap */
+	switch_wan_bmp = <ESS_PORT5>; /* wan port bitmap */
+	switch_mac_mode1 = <MAC_MODE_SGMII_CHANNEL0>; /* mac mode for uniphy instance1*/
+	switch_mac_mode2 = <MAC_MODE_SGMII_CHANNEL0>; /* mac mode for uniphy instance2*/
+
+	qcom,port_phyinfo {
+		port@6 {
+			port_id = <6>;
+			phy_address = <4>;
+		};
+		port@5 {
+			port_id = <5>;
+			phy_address = <28>;
+			port_mac_sel = "QGMAC_PORT";
+		};
+	};
+};
+
+&edma {
+	status = "okay";
+};
+
+&dp5 {
+	status = "okay";
+	phy-handle = <&qca8081>;
+	label = "wan";
+};
+
+&dp6_syn {
+	status = "okay";
+	phy-handle = <&qca8033>;
+	label = "lan";
+};
+
+&wifi {
+	status = "okay";
+	qcom,ath11k-calibration-variant = "tplink_x80-5g";
+};

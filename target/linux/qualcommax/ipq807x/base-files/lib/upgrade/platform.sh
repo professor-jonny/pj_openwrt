@@ -118,6 +118,7 @@ platform_do_upgrade() {
 		mmc_do_upgrade "$1"
 		;;
 	redmi,ax6|\
+	tplink,x80-5g|\
 	xiaomi,ax3600|\
 	xiaomi,ax9000)
 		# Make sure that UART is enabled

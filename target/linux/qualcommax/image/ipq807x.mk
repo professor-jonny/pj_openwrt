@@ -332,6 +332,19 @@ define Device/redmi_ax6
 endef
 TARGET_DEVICES += redmi_ax6
 
+define Device/tplink_x80-5g
+	$(call Device/FitImage)
+	$(call Device/UbiFit)
+	DEVICE_VENDOR := TP-Link
+	DEVICE_MODEL := x80-5g
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DEVICE_DTS_CONFIG := config@hk01.c5
+	SOC := ipq8074
+	DEVICE_PACKAGES := ipq-wifi-tplink_x80-5g
+endef
+TARGET_DEVICES += tplink_x80-5g
+
 define Device/spectrum_sax1v1k
 	$(call Device/FitImage)
 	$(call Device/EmmcImage)
