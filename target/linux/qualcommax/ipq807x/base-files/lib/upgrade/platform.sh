@@ -1,4 +1,4 @@
-PART_NAME=firmware
+ PART_NAME=firmware
 REQUIRE_IMAGE_METADATA=1
 
 RAMFS_COPY_BIN='fw_printenv fw_setenv head'
@@ -262,6 +262,7 @@ platform_do_upgrade() {
 		CI_DATAPART="rootfs_data"
 		emmc_do_upgrade "$1"
 		;;
+	tplink,deco-x80-5g|\
 	tplink,eap620hd-v1|\
 	tplink,eap660hd-v1)
 		tplink_do_upgrade "$1"
