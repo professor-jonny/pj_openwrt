@@ -68,13 +68,14 @@ to suit the TP-Link Deco X80-5G target */
 		};
 	};
 
-	leds {
+	monochromatic-leds {
 		compatible = "gpio-leds";
 		pinctrl-0 = <&led_pins>;
 		pinctrl-names = "default";
 		/*note the LED's defined here are not individual they are a single combined RGB element
 		to mimic the OEM default behaviour green and red are switched on from boot to indicate yellow
 		to show the device is booting behaviour can be user defined in procd to override this.
+		if the group multicolor is active it locks control of singular LED's
 		OEM behaviour of multi function LED:
 		pulse Yellow: resetting/ rebooting.
 		Solid Yellow: starting up.
@@ -90,14 +91,14 @@ to suit the TP-Link Deco X80-5G target */
 			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>; /* green led component of rgb led */
 			color = <LED_COLOR_ID_GREEN>;
 			function = LED_FUNCTION_STATUS;
-			default-state = "on"; /* default state on to select component of yellow led color on start-up */
+			#default-state = "on"; /* default state on to select component of yellow led color on start-up */
 		};
 
 		led_system_red: red {
 			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>; /* red led component of rgb led */
 			color = <LED_COLOR_ID_RED>;
 			function = LED_FUNCTION_STATUS;
-			default-state = "on";  /* default state on to select component of yellow led color on start-up */
+			#default-state = "on";  /* default state on to select component of yellow led color on start-up */
 		};
 
 		led_system_blue: blue {
@@ -105,6 +106,14 @@ to suit the TP-Link Deco X80-5G target */
 			color = <LED_COLOR_ID_BLUE>;
 			function = LED_FUNCTION_STATUS;
 		};
+	};
+
+	multicolor-led {
+    compatible = "leds-group-multicolor"; /* mixing of physical led's to produce virtual colors from userspace */
+		color = <LED_COLOR_ID_RGB>;
+		function = LED_FUNCTION_STATUS;
+		max-brightness = <256>;
+		leds = <&led_system_green>,<&led_system_red>,<&led_system_blue>;
 	};
 
 	gpio_fan: gpio-fan {
