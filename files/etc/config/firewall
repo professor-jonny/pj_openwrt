@@ -1,0 +1,310 @@
+
+config defaults
+	option syn_flood '1'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
+config zone
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option network 'adults_lan'
+	option name 'adults_zone'
+
+config zone
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option network 'kids_lan'
+	option name 'kids_zone'
+
+config zone
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option masq '1'
+	option mtu_fix '1'
+	option name 'wan_zone'
+	list network 'wan'
+	list network 'wan6'
+	list network 'wwan'
+
+config forwarding
+	option src 'adults_zone'
+	option dest 'wan_zone'
+
+config forwarding
+	option src 'kids_zone'
+	option dest 'wan_zone'
+
+config include
+	option path '/etc/firewall.user'
+	option fw4_compatible '1'
+
+config redirect
+	option name 'dns hijack (adults_lan 53)'
+	option src 'adults_zone'
+	option proto 'tcp udp'
+	option src_dport '53'
+	option target 'DNAT'
+	option dest_port '53'
+
+config redirect
+	option target 'DNAT'
+	option name 'dot hijack (adults_lan 853)'
+	option src 'adults_zone'
+	option src_dport '853'
+	option dest_port '853'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-Ping'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-IGMP'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-MLD'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option proto 'esp'
+	option target 'ACCEPT'
+	option dest 'adults_zone'
+	option src 'wan_zone'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+	option dest 'adults_zone'
+	option src 'wan_zone'
+
+config rule
+	option name 'mr_sparkle_in'
+	list dest_ip '192.168.1.10'
+	option target 'ACCEPT'
+	list proto 'all'
+	option src 'kids_zone'
+	option dest 'adults_zone'
+	option family 'ipv4'
+
+config rule
+	list proto 'all'
+	option name 'mr_sparkle_out'
+	list src_ip '192.168.1.10'
+	option target 'ACCEPT'
+	option src 'adults_zone'
+	option dest 'kids_zone'
+	option family 'ipv4'
+
+config rule
+	option src 'kids_zone'
+	option dest 'adults_zone'
+	option target 'ACCEPT'
+	option name 'mr_sparkle_in_wireless'
+	list dest_ip '192.168.1.11'
+	option family 'ipv4'
+
+config rule
+	option name 'mr_sparkle_out_wireless'
+	option src 'adults_zone'
+	list src_ip '192.168.1.11'
+	option dest 'kids_zone'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option target 'REJECT'
+	option start_time '23:59:00'
+	option stop_time '06:30:00'
+	option src 'kids_zone'
+	option dest 'wan_zone'
+	option name 'kids_block_night'
+
+config rule
+	option name 'kids_block_afternoon'
+	option src 'kids_zone'
+	option dest 'wan_zone'
+	option target 'REJECT'
+	option start_time '16:30:00'
+	option stop_time '18:00:00'
+
+config rule
+	option dest 'wan_zone'
+	option target 'REJECT'
+	option src 'kids_zone'
+	option name 'reject vpn udp ports'
+	list proto 'udp'
+	option src_port '1194 500 4500 1701 51820'
+
+config rule
+	option name 'reject vpn tcp ports'
+	list proto 'tcp'
+	option src 'kids_zone'
+	option src_port '1723'
+	option dest 'wan_zone'
+	option target 'REJECT'
+
+config rule
+	option name 'dot block (adults _lan 853)'
+	option src 'adults_zone'
+	option src_port '853'
+	option target 'REJECT'
+	option dest 'wan_zone'
+
+config rule
+	option name 'dot block (kids_lan 853)'
+	option src 'kids_zone'
+	option src_port '853'
+	option target 'REJECT'
+	option dest 'wan_zone'
+
+config rule
+	option name 'mdns ipv4 allow (adults_lan 5353)'
+	option family 'ipv4'
+	option src_port '5353'
+	option dest_port '5353'
+	option target 'ACCEPT'
+	option src 'adults_zone'
+	list dest_ip '224.0.0.251'
+
+config rule
+	option name 'mdns ipv6 allow (adults_lan 5353)'
+	option family 'ipv6'
+	list proto 'udp'
+	option src 'adults_zone'
+	option src_port '5353'
+	list dest_ip 'ff02::fb'
+	option dest_port '5353'
+	option target 'ACCEPT'
+
+config rule
+	option name 'mdns ipv4 allow (kids_lan 5353)'
+	option family 'ipv4'
+	option src 'kids_zone'
+	option src_port '5353'
+	list dest_ip '224.0.0.251'
+	option dest_port '5353'
+	option target 'ACCEPT'
+
+config rule
+	option name 'mdns ipv6 allow (kids_lan 5353)'
+	option family 'ipv6'
+	list proto 'udp'
+	option src 'kids_zone'
+	option src_port '5353'
+	list dest_ip 'ff02::fb'
+	option dest_port '5353'
+	option target 'ACCEPT'
+
+config redirect
+	option target 'DNAT'
+	option name 'dns hijack (kids lan 53)'
+	option src 'kids_zone'
+	option src_dport '53'
+	option dest_port '53'
+
+config redirect
+	option target 'DNAT'
+	option name 'dot hijack (kids_lan 853'
+	option src 'kids_zone'
+	option src_dport '853'
+	option dest_port '853'
+
+config include 'miniupnpd'
+	option type 'script'
+	option path '/usr/share/miniupnpd/firewall.include'
+
+config redirect
+	option dest 'adults_zone'
+	option target 'DNAT'
+	option name 'plex port forward'
+	option src 'wan_zone'
+	option src_dport '32400'
+	option dest_ip '192.168.1.10'
+	option dest_port '32400'
+	list proto 'tcp'
+
+config include 'bcp38'
+	option type 'script'
+	option path '/usr/lib/bcp38/run.sh'
+
+config redirect
+	option dest 'adults_zone'
+	option target 'DNAT'
+	option name 'qbtorrent'
+	option src 'wan_zone'
+	option src_dport '10107'
+	option dest_ip '192.168.1.10'
+

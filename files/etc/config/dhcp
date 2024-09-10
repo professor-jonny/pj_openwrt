@@ -1,0 +1,274 @@
+
+config dnsmasq 'adults_dns'
+	option localise_queries '1'
+	option rebind_protection '0'
+	option local '/adults_lan/'
+	option domain 'adults_lan'
+	option expandhosts '1'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/adults_lan/dhcp.leases'
+	list interface 'adults_lan'
+	option localservice '0'
+	list notinterface 'kids_lan'
+	option confdir '/tmp/adults_lan/dnsmasq.d'
+	option quietdhcp '1'
+	option filterwin2k '1'
+	option allservers '1'
+	list server '/mask.icloud.com/'
+	list server '/mask-h2.icloud.com/'
+	list server '/use-application-dns.net/'
+	list server '127.0.0.1#5054'
+	list server '127.0.0.1#5053'
+	option boguspriv '0'
+	option doh_backup_noresolv '-1'
+	option noresolv '1'
+	list doh_backup_server '8.8.8.8'
+	list doh_server '127.0.0.1#5054'
+	list doh_server '127.0.0.1#5053'
+
+config dnsmasq 'kids_dns'
+	option localise_queries '1'
+	option rebind_protection '0'
+	option local '/kids_lan/'
+	option domain 'kids_lan'
+	option expandhosts '1'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/kids_lan/dhcp.leases'
+	option confdir '/tmp/kids_lan/dnsmasq.d'
+	list interface 'kids_lan'
+	option localservice '0'
+	option quietdhcp '1'
+	option filterwin2k '1'
+	option allservers '1'
+	list server '/mask.icloud.com/'
+	list server '/mask-h2.icloud.com/'
+	list server '/use-application-dns.net/'
+	list server '127.0.0.1#5054'
+	list server '127.0.0.1#5053'
+	option boguspriv '0'
+	list notinterface 'adults_lan'
+	list notinterface 'loopback'
+	option doh_backup_noresolv '-1'
+	option noresolv '1'
+	list doh_backup_server '8.8.8.8'
+	list doh_server '127.0.0.1#5054'
+	list doh_server '127.0.0.1#5053'
+
+config dhcp 'adults_lan'
+	option instance 'adults_dns'
+	option interface 'adults_lan'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	list dhcp_option '43,ANDROID_METERED'
+	option ra 'server'
+	option dhcpv6 'server'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+
+config dhcp 'kids_lan'
+	option instance 'kids_dns'
+	option interface 'kids_lan'
+	option start '100'
+	option leasetime '12h'
+	option limit '150'
+	list dhcp_option '43,ANDROID_METERED'
+	option ra 'server'
+	option dhcpv6 'server'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+config domain
+	option name 'shed-link-1'
+	option ip '192.168.1.30'
+
+config domain
+	option name 'shed-link-2'
+	option ip '192.168.1.31'
+
+config domain
+	option name 'shed-router'
+	option ip '192.168.1.40'
+
+config domain
+	option name 'power-line-1'
+	option ip '192.168.1.50'
+
+config domain
+	option name 'power-line-2'
+	option ip '192.168.1.51'
+
+config domain
+	option ip '192.168.1.10'
+	option name 'mr-sparkle-pc'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac 'A8:DB:03:10:FF:30'
+	option name 'jono-ph'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '1C:F8:D0:C3:20:B5'
+	option name 'xanthea-ph'
+
+config host
+	option instance 'kids_dns'
+	option dns '1'
+	option mac '50:ED:3C:93:FF:18'
+	option name 'tayne-ph'
+
+config host
+	option instance 'kids_dns'
+	option dns '1'
+	option mac '24:75:3A:08:58:9B'
+	option name 'sophie-ph'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '0C:2F:B0:E1:53:6C'
+	option name 'xanthea-watch'
+
+config host
+	option instance 'kids_dns'
+	option name 'tayne-tab'
+	option dns '1'
+	option mac '74:4C:A1:CC:A6:A9'
+
+config host
+	option instance 'kids_dns'
+	option dns '1'
+	option mac 'e0:aa:96:57:4a:08'
+	option name 'sophie-tab'
+
+config host
+	option instance 'kids_dns'
+	option dns '1'
+	option mac '58:B1:0F:11:68:26'
+	option name 'justin-tab'
+
+config host
+	option instance 'kids_dns'
+	option dns '1'
+	option mac '58:B1:0F:11:5C:BC'
+	option name 'charlotte-tab'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '1C:D6:BE:79:7C:47'
+	option name 'sonytv-wireless'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '40:49:0F:AC:6A:B7'
+	option name 'sonytv-wired'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '28:26:A8:10:68:E1'
+	option name 'xboxone-x-wired'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '28:16:A8:10:68:E3'
+	option name 'xboxone-x-wireless'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac 'B8:31:B5:69:A3:D5'
+	option name 'xboxone-s-wired'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac 'b8:31:b5:69:a3:d7'
+	option name 'xboxone-s-wireless'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '00:22:48:B6:2B:30'
+	option name 'xbox360'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '00:22:AA:1A:75:F2'
+	option name 'wii'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '00:1E:B8:05:5A:23'
+	option name 'titannit'
+	option ip '192.168.1.20'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '80:5E:C0:79:03:77'
+	option name 'yealink'
+	option ip '192.168.1.147'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '34:13:E8:18:1A:91'
+	option name 'mr-sparkle-pc-wireless'
+	option ip '192.168.1.11'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '94:DE:80:B9:B1:2C'
+	option name 'mr-sparkle-pc-wired'
+	option ip '192.168.1.10'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '08:38:E6:35:2E:19'
+	option name 'smart-clock'
+
+config host
+	option instance 'adults_dns'
+	option name 'shedlink-1'
+	option dns '1'
+	option mac '44:D9:E7:D0:A2:A7'
+	option ip '192.168.1.30'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '68:D7:9A:90:DE:7A'
+	option name 'shedlink-2'
+	option ip '192.168.1.31'
+
+config host
+	option instance 'adults_dns'
+	option dns '1'
+	option mac '2C:B0:5D:72:1B:A1'
+	option name 'shed-router'
+	option ip '192.168.1.40'
+
+config host
+	option ip '192.168.1.194'
+	option name 'Justin-Tablet'
+	list mac '90:09:17:53:98:3F'
+
