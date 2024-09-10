@@ -1,0 +1,66 @@
+
+config interface 'loopback'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+	option device 'lo'
+
+config globals 'globals'
+
+config interface 'adults_lan'
+	option proto 'static'
+	option ipaddr '192.168.1.1'
+	option netmask '255.255.255.0'
+	option device 'br-adults_lan'
+	option ip6assign '64'
+	option ip6hint '1'
+
+config interface 'kids_lan'
+	option proto 'static'
+	option ipaddr '192.168.2.1'
+	option netmask '255.255.255.0'
+	option device 'br-kids_lan'
+	option ip6assign '64'
+	option ip6hint '2'
+
+config interface 'wan'
+	option proto 'dhcp'
+	option peerdns '0'
+	option device 'wan'
+	option metric '1'
+	option macaddr 'b4:b0:24:59:b8:0c'
+
+config interface 'wan6'
+	option proto 'dhcpv6'
+	option reqaddress 'try'
+	option reqprefix 'auto'
+	option peerdns '0'
+	option device 'wan'
+	option metric '2'
+	option norelease '1'
+	option ip6assign '64'
+
+config device
+	option name 'br-adults_lan'
+	option type 'bridge'
+	list ports 'lan'
+
+config device
+	option name 'br-kids_lan'
+
+config interface 'wwan'
+	option proto 'qmi'
+	option device '/dev/cdc-wdm0'
+	option auth 'none'
+	option metric '3'
+	option pdptype 'ipv4'
+	option auto '0'
+
+config device
+	option name 'br-kids_lan'
+	option type 'bridge'
+
+config device
+	option name 'lan'
+	option macaddr 'B4:B0:24:59:B8:0d'
+
