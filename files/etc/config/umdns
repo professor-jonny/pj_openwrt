@@ -1,0 +1,4 @@
+config umdns
+	option jail 1
+	list network adults_lan
+	list network kids_lan
