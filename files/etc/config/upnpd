@@ -1,0 +1,48 @@
+
+config upnpd 'config'
+	option download '1024'
+	option upload '512'
+	option log_output '1'
+	option external_iface 'wan'
+#	option external_ip '192.168.1.254'
+	option internal_iface 'adults_lan kids_lan'
+	option port '5000'
+	option upnp_lease_file '/var/run/miniupnpd.leases'
+	option igdv1 '1'
+	option ext_ip_reserved_ignore '1'
+	option uuid '78775f9e-c20d-4a56-943c-6126cbf626d9'
+	option enabled '1'
+	option use_stun '1'
+	option stun_host 'stun1.l.google.com'
+	option stun_port '19302'
+	option presentation_url 'http://192.168.1.1'
+	option enable_upnp '0'
+
+config perm_rule
+	option action 'allow'
+	option ext_ports '1024-65535'
+	option int_addr '192.168.1.0/24'
+	option int_ports '1024-65535'
+	option comment 'Allow high ports adults lan'
+
+config perm_rule
+	option ext_ports '0-65535'
+	option int_addr '192.168.1.0/24'
+	option int_ports '0-65535'
+	option comment 'Default deny adults lan'
+	option action 'deny'
+
+config perm_rule
+	option action 'allow'
+	option ext_ports '1024-65535'
+	option int_addr '192.168.2.0/24'
+	option int_ports '1024-65535'
+	option comment 'Allow high ports kids lan'
+
+config perm_rule
+	option ext_ports '0-65535'
+	option int_addr '192.168.2.0/24'
+	option int_ports '0-65535'
+	option comment 'Default deny kids lan'
+	option action 'deny'
+
