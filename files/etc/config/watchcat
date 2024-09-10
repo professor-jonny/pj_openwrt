@@ -1,0 +1,21 @@
+
+config watchcat
+	option period '6h'
+	option mode 'ping_reboot'
+	option pinghosts '8.8.8.8'
+	option forcedelay '30'
+	option pingperiod '30s'
+	option pingsize 'standard'
+	option interface '@wan'
+	option addressfamily 'any'
+
+config watchcat
+	option mode 'restart_iface'
+	option period '2m'
+	option pinghosts '8.8.8.8'
+	option addressfamily 'any'
+	option pingperiod '30s'
+	option pingsize 'standard'
+	option interface 'wan'
+
+
