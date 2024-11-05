@@ -24,7 +24,6 @@ case "$FIRMWARE" in
 	netgear,wax218|\
 	qnap,301w|\
 	redmi,ax6|\
-	tplink,deco-x80-5g|\
 	xiaomi,ax3600|\
 	xiaomi,ax9000|\
 	yuncore,ax880|\
@@ -80,6 +79,14 @@ case "$FIRMWARE" in
 	prpl,haze|\
 	spectrum,sax1v1k)
 		caldata_extract_mmc "0:ART" 0x1000 0x20000
+		;;
+	tplink,deco-x80-5g)
+		caldata_extract "0:art" 0x1000 0x20000
+		label_mac=$(get_mac_binary /tmp/factory_data/default-mac 0)
+		ath11k_patch_mac $label_mac 1
+		ath11k_patch_mac $(macaddr_add $label_mac 1) 0
+		ath11k_patch_mac $(macaddr_add $label_mac 2) 1
+		ath11k_set_macflag
 		;;
 	tplink,eap660hd-v1)
 		caldata_from_file "/tmp/factory_data/radio" 0 0x20000
