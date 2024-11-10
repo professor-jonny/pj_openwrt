@@ -454,7 +454,116 @@ to suit the TP-Link Deco X80-5G target */
 		nand-bus-width = <8>;
 
 		partitions {
-			compatible = "qcom,smem-part"; /* define SMEM partition table */
+
+			compatible = "fixed-partitions"; /* define fixed partition table */
+			//compatible = "qcom,smem-part"; /* define SMEM partition table */
+			/* the device has a smem partition table but preinit is to late to attach the ubi partition
+			causing mac capture to fail in the network init script*/
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "0:SBL1";
+				reg = <0x00000000 0x100000>;
+				read-only;
+			};
+
+			partition@100000 {
+				label = "0:MIBIB";
+				reg = <0x00100000 0x100000>;
+				read-only;
+			};
+
+			partition@200000 {
+				label = "0:BOOTCONFIG";
+				reg = <0x00200000 0x80000>;
+				read-only;
+			};
+
+			partition@280000 {
+				label = "0:BOOTCONFIG1";
+				reg = <0x00280000 0x80000>;
+				read-only;
+			};
+
+			partition@300000 {
+				label = "0:QSEE";
+				reg = <0x00300000 0x300000>;
+				read-only;
+			};
+
+			partition@600000 {
+				label = "0:DEVCFG";
+				reg = <0x00600000 0x80000>;
+				read-only;
+			};
+
+			partition@680000 {
+				label = "0:APDP";
+				reg = <0x00680000 0x80000>;
+				read-only;
+			};
+
+			partition@700000 {
+				label = "0:RPM";
+				reg = <0x00700000 0xc80000>;
+				read-only;
+			};
+
+			partition@780000 {
+				label = "0:CDT";
+				reg = <0x00780000 0x80000>;
+			};
+
+			partition@800000 {
+				label = "0:APPSBLENV";
+				reg = <0x00800000 0x180000>;
+			};
+
+			partition@980000 {
+				label = "0:APPSBL";
+				reg = <0x00980000 0x200000>;
+				read-only;
+			};
+
+			partition@b80000 {
+				label = "0:ART";
+				reg = <0x00b80000 0x80000>;
+				read-only;
+			};
+
+			partition@c00000 {
+				compatible = "linux,ubi";
+				label = "rootfs";
+				reg = <0x00c00000 0x2a00000>;
+			};
+
+			partition@3600000 {
+				compatible = "linux,ubi";
+				label = "rootfs_1";
+				reg = <0x03600000 0x2a00000>;
+			};
+
+			partition@6000000 {
+				label = "0:ETHPHYFW";
+				reg = <0x06000000 0x80000>;
+				read-only;
+			};
+
+			partition@6080000 {
+				compatible = "linux,ubi";
+				label = "factory_data";
+				reg = <0x06080000 0x900000>;
+				read-only;
+			};
+
+			partition@6980000 {
+				compatible = "linux,ubi";
+				label = "runtime_data";
+				reg = <0x06980000 0x1100000>;
+				read-only;
+			};
 		};
 	};
 };
