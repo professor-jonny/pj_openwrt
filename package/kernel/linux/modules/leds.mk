@@ -24,6 +24,23 @@ $(eval $(call KernelPackage,leds-gpio))
 
 LED_TRIGGER_DIR=$(LINUX_DIR)/drivers/leds/trigger
 
+define KernelPackage/leds-group-multi-color
+	 SUBMENU:=$(LEDS_MENU)
+	 TITLE:=LEDs group multicolor support
+	 KCONFIG:=CONFIG_LEDS_CLASS_MULTICOLOR=y \
+	 	CONFIG_LEDS_GROUP_MULTICOLOR
+	 FILES:=$(LINUX_DIR)/drivers/leds/rgb/leds-group-multicolor.ko
+	 AUTOLOAD:=$(call AutoLoad,60,leds-group-multi-color,1)
+endef
+
+define KernelPackage/leds-group-multi-color/description
+	 This option enables support for monochrome LEDs that are grouped
+	 into multicolor LEDs which is useful in the case where LEDs of
+	 different colors are physically grouped in a single multi-color LED
+	 and driven by a controller that does not have multi-color support.
+endef
+
+$(eval $(call KernelPackage,leds-group-multi-color))
 define KernelPackage/ledtrig-activity
   SUBMENU:=$(LEDS_MENU)
   TITLE:=LED Activity Trigger

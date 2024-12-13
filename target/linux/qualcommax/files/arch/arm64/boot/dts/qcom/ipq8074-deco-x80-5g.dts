@@ -18,10 +18,6 @@ to suit the TP-Link Deco X80-5G target */
 
 	aliases {
 		serial0 = &blsp1_uart5;
-		led-boot = &led_virtual_yellow;
-		led-failsafe = &led_virtual_blue;
-		led-running = &led_virtual_yellow;
-		led-upgrade = &led_virtual_green;
 		//ethernet0 = &dp5; /* Aliases to capture wan mac from bootloader */
 		//ethernet1 = &dp6_syn; /* Aliases to capture lan mac from bootloader */
 
@@ -101,62 +97,11 @@ to suit the TP-Link Deco X80-5G target */
 		};
 	};
 
-	virtualcolor_leds {
-		compatible = "leds-group-virtualcolor";
-		/*note the LED's defined here are virtual
-		by mixing the individual colors of the monochromatic system led.
-		The OEM default behaviour of the multifunction status led is as follows:
-		pulse Yellow: resetting/ rebooting.
-		Solid Yellow: starting up.
-		Pulse Blue: factory reset/ first boot ready for setup or WPS in progress.
-		Solid Blue: setting up/ committing settings change.
-		Pulse Green: upgrading firmware.
-		Solid Green: connected to 4G / WAN.
-		Solid Purple: connected to 5G.
-		Pulse Red: mesh failure cant find peers.
-		Solid Red: fault */
-
-		led_virtual_red: virtual_red {
-			color = <LED_COLOR_ID_RED>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_red>;
-		};
-
-		led_virtual_green: virtual_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_green>;
-		};
-
-		led_virtual_blue: virtual_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_blue>;
-		};
-
-		led_virtual_yellow: virtual_yellow {
-			color = <LED_COLOR_ID_YELLOW>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_green>, <&led_system_red>;
-		};
-
-		led_virtual_cyan: virtual_cyan {
-			color = <LED_COLOR_ID_CYAN>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_green>, <&led_system_blue>;
-		};
-
-		led_virtual_violet: virtual_violet {
-			color = <LED_COLOR_ID_VIOLET>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_red>, <&led_system_blue>;
-		};
-
-		led_virtual_white: virtual_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = LED_FUNCTION_STATUS;
-			leds = <&led_system_green>, <&led_system_red>, <&led_system_blue>;
-		};
+	multicolor-led {
+		compatible = "leds-group-multicolor";
+	 	color = <LED_COLOR_ID_RGB>;
+	 	function = LED_FUNCTION_STATUS;
+	 	leds = <&led_system_green>, <&led_system_red>, <&led_system_blue>;
 	};
 
 	gpio_fan: gpio-fan {
