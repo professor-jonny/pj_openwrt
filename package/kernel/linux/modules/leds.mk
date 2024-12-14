@@ -22,6 +22,8 @@ endef
 
 $(eval $(call KernelPackage,leds-gpio))
 
+LED_TRIGGER_DIR=$(LINUX_DIR)/drivers/leds/trigger
+
 define KernelPackage/led-group-multi-color
   SUBMENU:=$(LEDS_MENU)
   TITLE:=LEDs group multi-color support
@@ -39,8 +41,6 @@ define KernelPackage/led-group-multi-color/description
 endef
 
 $(eval $(call KernelPackage,led-group-multi-color))
-
-LED_TRIGGER_DIR=$(LINUX_DIR)/drivers/leds/trigger
 
 define KernelPackage/ledtrig-activity
   SUBMENU:=$(LEDS_MENU)
