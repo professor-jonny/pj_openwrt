@@ -19,7 +19,7 @@ read -n1 -s -r GIT
 if [ "$GIT" == "C" ] ; then
 	echo -e "\ncontinue"
 	git fetch
-  git reset --hard origin/kmod_virtual_led_test
+	git reset --hard origin/kmod-soft-mux-led-test
 else
   echo
   echo "skipped"
