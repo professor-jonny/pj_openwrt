@@ -17,8 +17,12 @@ to suit the TP-Link Deco X80-5G target */
 	compatible = "tplink,deco-x80-5g", "qcom,ipq8074";
 
 	aliases {
-		 serial0 = &blsp1_uart5;
- 	};
+		led-boot = &led_virtual_yellow;
+		led-failsafe = &led_virtual_blue;
+		led-running = &led_virtual_yellow;
+		led-upgrade = &led_virtual_green;
+		serial0 = &blsp1_uart5;
+	};
 
 	chosen {
 		stdout-path = "serial0:115200n8";
@@ -66,27 +70,106 @@ to suit the TP-Link Deco X80-5G target */
 		compatible = "gpio-leds";
 		pinctrl-0 = <&led_pins>;
 		pinctrl-names = "default";
-		/*note the LED's defined here are not individual they are a single combined RGB element used for status functions.
-		To mimic the OEM default behaviour green and red are switched on from boot to indicate yellow (power on).*/
+	/*note the LED's defined here are not individual they are a single combined RGB element
+		they will be overridden by the virtual leds if the leds group virtual color
+		kernel driver is loaded */
 
-		led_system_green: green {
-			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>;
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_STATUS;
-			default-state = "on";
+		led_system_red: led-red {
+			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>; /* red led component of rgb led */
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_INDICATOR;
 		};
 
-		led_system_red: red {
-			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>;
+		led_system_green: led-green {
+			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>; /* green led component of rgb led */
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_INDICATOR;
+		};
+
+		led_system_blue: led-blue {
+			gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>; /* blue led component of rgb */
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_INDICATOR;
+		};
+	};
+
+	virtual_led_set: virtual-monocromatic-leds {
+		compatible = "leds-group-virtualcolor";
+		// #address-cells = <1>;
+		// #size-cells = <0>;
+		/*note the LED's defined here are virtual
+		by mixing the individual colors of the monochromatic system led.
+		*/
+
+		led_virtual_red: virtual-red {
 			color = <LED_COLOR_ID_RED>;
 			function = LED_FUNCTION_STATUS;
-			default-state = "on";
+			priority = <10>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255>;
+			leds = <&led_system_red>;
+			/*Solid Red: fault */
 		};
 
-		led_system_blue: blue {
-			gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
+		led_virtual_green: virtual-green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_STATUS;
+			priority = <10>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255>;
+			leds = <&led_system_green>;
+			/*Solid Green: connected to 4G / WAN.*/
+			/*Pulse Green: upgrading firmware.*/
+		};
+
+		led_virtual_blue: virtual-blue {
 			color = <LED_COLOR_ID_BLUE>;
 			function = LED_FUNCTION_STATUS;
+			priority = <5>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255>;
+			leds = <&led_system_blue>;
+			/*Solid Blue: setting up/ committing settings change.*/
+			/*Pulse Blue: factory reset/ first boot ready for setup or WPS in progress.*/
+		};
+
+		led_virtual_yellow: virtual-yellow {
+			color = <LED_COLOR_ID_YELLOW>;
+			function = LED_FUNCTION_STATUS;
+			priority = <0>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255 255>;
+			leds = <&led_system_green>, <&led_system_red>;
+			/*Solid Yellow: starting up.*/
+			/*pulse Yellow: resetting/ rebooting.*/
+		};
+
+		led_virtual_cyan: virtual-cyan {
+			color = <LED_COLOR_ID_CYAN>;
+			function = LED_FUNCTION_STATUS;
+			priority = <5>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255 255>;
+			leds = <&led_system_green>, <&led_system_blue>;
+		};
+
+		led_virtual_violet: virtual-violet {
+			color = <LED_COLOR_ID_VIOLET>;
+			function = LED_FUNCTION_STATUS;
+			priority = <5>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255 255>;
+			leds = <&led_system_red>, <&led_system_blue>;
+			/*Solid Purple: connected to 5G.*/
+		};
+
+		led_virtual_white: virtual-white {
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_STATUS;
+			priority = <5>;
+			led-mode = "standard";
+			mc-channel-multipliers = <255 255 255>;
+			leds = <&led_system_green>, <&led_system_red>, <&led_system_blue>;
 		};
 	};
 
