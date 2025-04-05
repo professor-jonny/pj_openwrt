@@ -17,8 +17,12 @@ to suit the TP-Link Deco X80-5G target */
 	compatible = "tplink,deco-x80-5g", "qcom,ipq8074";
 
 	aliases {
-		 serial0 = &blsp1_uart5;
- 	};
+		led-boot = &led_virtual_yellow;
+		led-failsafe = &led_virtual_blue;
+		led-running = &led_virtual_yellow;
+		led-upgrade = &led_virtual_green;
+		serial0 = &blsp1_uart5;
+	};
 
 	chosen {
 		stdout-path = "serial0:115200n8";
@@ -66,27 +70,84 @@ to suit the TP-Link Deco X80-5G target */
 		compatible = "gpio-leds";
 		pinctrl-0 = <&led_pins>;
 		pinctrl-names = "default";
-		/*note the LED's defined here are not individual they are a single combined RGB element used for status functions.
-		To mimic the OEM default behaviour green and red are switched on from boot to indicate yellow (power on).*/
+	/*note the LED's defined here are not individual they are a single combined RGB element
+		they will be overridden by the virtual leds if the leds group virtual color
+		kernel driver is loaded */
 
 		led_system_green: green {
-			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>;
+			gpios = <&tlmm 50 GPIO_ACTIVE_HIGH>; /* green led component of rgb led */
 			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_STATUS;
-			default-state = "on";
+			function = LED_FUNCTION_INDICATOR;
 		};
 
 		led_system_red: red {
-			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>;
+			gpios = <&tlmm 51 GPIO_ACTIVE_HIGH>; /* red led component of rgb led */
 			color = <LED_COLOR_ID_RED>;
-			function = LED_FUNCTION_STATUS;
-			default-state = "on";
+			function = LED_FUNCTION_INDICATOR;
 		};
 
 		led_system_blue: blue {
-			gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
+			gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>; /* blue led component of rgb */
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_INDICATOR;
+		};
+	};
+
+	virtualcolor_leds {
+		compatible = "leds-group-virtualcolor";
+		/*note the LED's defined here are virtual
+		by mixing the individual colors of the monochromatic system led.
+		The OEM default behavior of the multifunction status led is as follows:
+		pulse Yellow: resetting/ rebooting.
+		Solid Yellow: starting up.
+		Pulse Blue: factory reset/ first boot ready for setup or WPS in progress.
+		Solid Blue: setting up/ committing settings change.
+		Pulse Green: upgrading firmware.
+		Solid Green: connected to 4G / WAN.
+		Solid Purple: connected to 5G.
+		Pulse Red: mesh failure cant find peers.
+		Solid Red: fault */
+
+		led_virtual_red: virtual_red {
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_red>;
+		};
+
+		led_virtual_green: virtual_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_green>;
+		};
+
+		led_virtual_blue: virtual_blue {
 			color = <LED_COLOR_ID_BLUE>;
 			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_blue>;
+		};
+
+		led_virtual_yellow: virtual_yellow {
+			color = <LED_COLOR_ID_YELLOW>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_green>, <&led_system_red>;
+		};
+
+		led_virtual_cyan: virtual_cyan {
+			color = <LED_COLOR_ID_CYAN>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_green>, <&led_system_blue>;
+		};
+
+		led_virtual_violet: virtual_violet {
+			color = <LED_COLOR_ID_VIOLET>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_red>, <&led_system_blue>;
+		};
+
+		led_virtual_white: virtual_white {
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_STATUS;
+			leds = <&led_system_green>, <&led_system_red>, <&led_system_blue>;
 		};
 	};
 
