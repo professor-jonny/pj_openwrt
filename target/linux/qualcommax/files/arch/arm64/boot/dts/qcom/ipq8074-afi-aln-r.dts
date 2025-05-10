@@ -29,7 +29,7 @@ to suit the Ubiquiti Amplifi Alien Router target */
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs-append = " ubi.mtd=rootfs rootfstype=squashfs root=/dev/ubiblock0_5";
+		bootargs-append = " ubi.mtd=rootfs rootfstype=squashfs root=/dev/ubiblock0_0";
 	};
 
 	lcm_boot0 {
@@ -95,14 +95,6 @@ to suit the Ubiquiti Amplifi Alien Router target */
 		function = "gpio";
 		drive-strength = <8>;
 		bias-pull-up;
-	};
-
-	pwm_pins: pwm_pinmux { /* I think this is disabled in the stock dts? */
-		mux_1 {
-			pins = "gpio25";
-			function = "pwm02";
-			drive-strength = <8>;
-		};
 	};
 
 	lcm_pins: lcm_ctrl_pins {
@@ -623,11 +615,11 @@ to suit the Ubiquiti Amplifi Alien Router target */
 	nvmem-cell-names = "mac-address";
 };
 
-&pcie1 {
+&pcie0 {
 	status = "okay"; /* extra pcie wi-fi card is only fitted for US market model */
 
-	perst-gpio = <&tlmm 62 GPIO_ACTIVE_LOW>;
-	 /* gpio 61 is in oem dts and it is used for the reset button, muck-up by ubiquiti? seems to be 62 in other devices */
+	perst-gpio = <&tlmm 58 GPIO_ACTIVE_LOW>;
+
 
 	bridge@0,0 {
 		reg = <0x00000000 0 0 0 0>;
@@ -646,6 +638,12 @@ to suit the Ubiquiti Amplifi Alien Router target */
 
 		};
 	};
+};
+
+&pcie0 {
+	status = "okay";
+	perst-gpios = <&tlmm 62 GPIO_ACTIVE_LOW>;
+		 /* gpio 61 is in oem dts and it is used for the reset button, muck-up by ubiquiti? seems to be 62 in other devices */
 };
 
 &wifi {
