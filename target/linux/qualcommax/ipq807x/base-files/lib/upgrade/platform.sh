@@ -263,7 +263,16 @@ platform_do_upgrade() {
 		CI_DATAPART="rootfs_data"
 		emmc_do_upgrade "$1"
 		;;
-	tplink,deco-x80-5g|\
+	tplink,deco-x80-5g)
+		CI_UBIPART_A="rootfs"
+		CI_UBIPART_B="rootfs_1"
+		CI_BOOT_VAR="tp_boot_idx"
+		CI_BOOT_A="0"
+		CI_BOOT_B="1"
+		dual_nand_prepare || return 1
+		dual_nand_do_upgrade "$1" || return 1
+		dual_nand_switch_boot
+		;;
 	tplink,eap620hd-v1|\
 	tplink,eap660hd-v1)
 		tplink_do_upgrade "$1"
