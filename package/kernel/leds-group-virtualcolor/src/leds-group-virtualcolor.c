@@ -2056,19 +2056,20 @@ static int leds_virtualcolor_probe(struct platform_device *pdev)
 
 	created = 0;
 	failed = 0;
+
 	device_for_each_child_node(dev, child) {
 	    vled = virtual_led_create(dev, child);
 
-	    if (vled == ERR_PTR(-EPROBE_DEFER)) {
-	        fwnode_handle_put(child);
-	        return -EPROBE_DEFER;  /* retry probe later */
-	    }
-
 	    if (IS_ERR(vled)) {
-	        dev_err(dev, "Failed to create LED from device node: %ld\n",
-	                PTR_ERR(vled));
+	        ret = PTR_ERR(vled);
+	        if (ret == -EPROBE_DEFER) {
+	            dev_info(dev, "Deferring probe - child LEDs not ready\n");
+	            fwnode_handle_put(child);
+	            return -EPROBE_DEFER;
+	        }
+
+	        dev_err(dev, "Failed to create LED from device node: %d\n", ret);
 	        failed++;
-	        fwnode_handle_put(child);
 	        continue;
 	    }
 
