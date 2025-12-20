@@ -1,0 +1,62 @@
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -271,6 +271,47 @@
+ }
+ EXPORT_SYMBOL_GPL(of_led_get);
+
++/**
++ * fwnode_led_get() - Get LED class device from firmware node reference
++ * @fwnode: Firmware node containing LED phandle array property
++ * @index: Index within the LED array property
++ * @out_dev: Optional output for the LED's parent device (may be NULL)
++ *
++ * This is a simple wrapper around of_led_get() that accepts fwnode parameters.
++ *
++ * Return: LED class device pointer on success, ERR_PTR on error
++ */
++struct led_classdev *fwnode_led_get(const struct fwnode_handle *fwnode,
++				    int index,
++				    struct device **out_dev)
++{
++	struct device_node *np;
++	struct led_classdev *cdev;
++
++	if (out_dev)
++		*out_dev = NULL;
++
++	if (!fwnode)
++		return ERR_PTR(-EINVAL);
++
++	/* Convert fwnode to device_node */
++	np = to_of_node(fwnode);
++	if (!np)
++		return ERR_PTR(-EINVAL);
++
++	/* Use existing OF implementation */
++	cdev = of_led_get(np, index);
++	if (IS_ERR(cdev))
++		return cdev;
++
++	/* Get parent device if available */
++	if (out_dev && cdev->dev)
++		*out_dev = get_device(cdev->dev->parent);
++
++	return cdev;
++}
++EXPORT_SYMBOL_GPL(fwnode_led_get);
++
+ /**
+  * led_put() - release a LED device
+  * @led_cdev: LED device
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -295,6 +295,9 @@
+
+ extern struct led_classdev *of_led_get(struct device_node *np, int index);
+ extern void led_put(struct led_classdev *led_cdev);
++extern struct led_classdev *fwnode_led_get(const struct fwnode_handle *fwnode,
++					   int index,
++					   struct device **out_dev);
+ struct led_classdev *__must_check devm_of_led_get(struct device *dev,
+ 						  int index);
+ struct led_classdev *__must_check devm_of_led_get_optional(struct device *dev,
