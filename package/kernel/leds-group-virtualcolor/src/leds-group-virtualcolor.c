@@ -79,9 +79,6 @@
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#ifdef CONFIG_OF
-  #include <linux/of.h>
-#endif
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>
@@ -115,8 +112,8 @@
   #define assert_controller_locked(lvc) lockdep_assert_held(&(lvc)->lock)
   #define assert_vled_locked(vled) lockdep_assert_held(&(vled)->lock)
 #else
-#define assert_controller_locked(lvc) do { } while (0)
-#define assert_vled_locked(vled) do { } while (0)
+#define assert_controller_locked(lvc) ((void)(lvc))
+#define assert_vled_locked(vled) ((void)(vled))
 #endif
 
 static inline bool is_valid_led_cdev(struct led_classdev *cdev)
@@ -126,70 +123,6 @@ static inline bool is_valid_led_cdev(struct led_classdev *cdev)
 	if (!cdev->brightness_set && !cdev->brightness_set_blocking)
 		return false;
 	return true;
-}
-
-/*
- * vcolor_led_from_fwnode - Resolve LED classdev from fwnode reference
- * @fwnode: Firmware node containing LED array
- * @index: Index within the LED array property
- * @out_dev: Optional output for the LED's parent device (may be NULL for GPIO LEDs)
- *
- * This is the single OF bridge point in the driver, following V4L2's pattern.
- * Once the LED subsystem provides fwnode_led_get(), this function can be replaced
- * with a single line: return fwnode_led_get(fwnode, index, out_dev);
- *
- * Returns: LED classdev pointer or ERR_PTR on failure
- */
-static struct led_classdev *vcolor_led_from_fwnode(const struct fwnode_handle *fwnode,
-						   int index,
-						   struct device **out_dev)
-{
-	struct led_classdev *cdev;
-	struct device_node *np;
-
-	if (out_dev)
-		*out_dev = NULL;
-
-#ifdef CONFIG_OF
-	/*  SINGLE OF BRIDGE: Convert fwnode to of_node  */
-	np = to_of_node((struct fwnode_handle *)fwnode);
-	if (!np)
-		return ERR_PTR(-EINVAL);
-
-	/*
-	 * of_led_get() is the current LED subsystem API that handles:
-	 * - GPIO LEDs (which don't have struct device)
-	 * - Platform LED controllers
-	 * - Deferred probing via -EPROBE_DEFER
-	 * - Reference counting via led_module_get()
-	 *
-	 * The index parameter allows accessing individual LEDs in phandle arrays.
-	 *
-	 * Future replacement: When fwnode_led_get() exists in LED core,
-	 * this entire #ifdef block becomes: return fwnode_led_get(fwnode, index, out_dev);
-	 */
-	cdev = of_led_get(np, index);
-	if (IS_ERR(cdev))
-		return cdev;
-
-	if (!is_valid_led_cdev(cdev)) {
-		led_put(cdev);
-		if (out_dev)
-			*out_dev = NULL;
-		return ERR_PTR(-EINVAL);
-	}
-
-	/*
-	 * Store parent device reference if it exists.
-	 * GPIO LEDs may not have cdev->dev, which is fine.
-	 */
-	if (out_dev && cdev->dev)
-		*out_dev = get_device(cdev->dev);
-
-	return cdev;
-#else
-	return ERR_PTR(-ENOTSUPP);
-#endif
 }
 
 /* Structured logging macros */
@@ -490,12 +423,9 @@ static int parse_leds_fwnode_array(struct device *dev,
 	/* Iterate through each LED reference and PACK valid entries */
 	valid = 0;
 	for (idx = 0; idx < count; idx++) {
-		led_dev = NULL;
 
-		/*
-		 * Single OF bridge point: resolve LED from fwnode using index.
-		 */
-		cdev = vcolor_led_from_fwnode(fwnode, idx, &led_dev);
+   /*Resolve LED from fwnode using index.*/
+		cdev = fwnode_led_get(fwnode, idx, &led_dev);
 
 		if (IS_ERR(cdev)) {
 			ret = PTR_ERR(cdev);
