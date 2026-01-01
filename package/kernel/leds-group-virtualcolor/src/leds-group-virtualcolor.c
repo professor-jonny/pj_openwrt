@@ -64,7 +64,7 @@
 #define PRIORITY_MAX INT_MAX
 #define VLED_SNAPSHOT_DEFAULT 32 /* Typical system has <32 vLEDs per controller */
 
-#define MAX_DEBUGFS_NAME 96 /* Sized for "function:color-multicolor-##" + vLED name */
+#define MAX_DEBUGFS_NAME  (32 + 32 + 32) /* function + color + suffix */
 
 static inline bool is_valid_led_cdev(struct led_classdev *cdev)
 {
@@ -287,25 +287,30 @@ static inline void virtual_led_put(struct virtual_led *vled)
  */
 static inline bool controller_safe_arbitrate(struct vcolor_controller *lvc)
 {
-if (!lvc || atomic_read(&lvc->removing))
-	return false;
+	if (!lvc)
+		return false;
 
-if (atomic_read(&lvc->rebuilding)) {
 	mutex_lock(&lvc->lock);
-	lvc->needs_arbitration = true;
-	mutex_unlock(&lvc->lock);
-	return false;
-}
 
-mutex_lock(&lvc->lock);
-
-	if (!lvc->suspended &&
-	    !atomic_read(&lvc->rebuilding) &&
-	    device_is_registered(&lvc->pdev->dev)) {
-		controller_run_arbitration_and_update(lvc);
+	/* Check removal flag under lock */
+	if (atomic_read(&lvc->removing)) {
 		mutex_unlock(&lvc->lock);
+		return false;
+	}
+
+	/* Check rebuilding under lock */
+	if (atomic_read(&lvc->rebuilding)) {
+		lvc->needs_arbitration = true;
+		mutex_unlock(&lvc->lock);
+		return false;
+	}
+
+	/* Check if safe to run arbitration */
+	if (!lvc->suspended && device_is_registered(&lvc->pdev->dev)) {
+		controller_run_arbitration_and_update(lvc);
+		/* Lock released by arbitration function */
 		return true;
-}
+	}
 
 mutex_unlock(&lvc->lock);
 return false;
@@ -465,36 +470,40 @@ static int validate_and_set_max_brightness(struct virtual_led *vled)
 static void global_release_all_for_pdev(struct platform_device *pdev)
 {
 	unsigned long index;
-	unsigned long released;
 	struct global_phys_owner *gpo;
+	unsigned long released = 0;
+	unsigned long to_release = 0;
 
 	down_write(&global_owner_rwsem);
 
-	released = 0;
-
-	/*
-	 * Use xa_for_each() + xa_erase() instead of XA_STATE + xas_store().
-	 *
-	 * The old code used xas_store(&xas, NULL) inside xas_for_each(), which
-	 * corrupts the iterator state and can skip entries or cause crashes.
-	 *
-	 * xa_for_each() is safe to use with xa_erase() because:
-	 * 1. xa_for_each is a simple macro that doesn't maintain complex state
-	 * 2. xa_erase() is designed to work during iteration
-	 * 3. The iterator naturally moves to the next valid entry
-	 */
+	/* Pass 1: count */
 	xa_for_each(&global_owner_xa, index, gpo) {
-		if (gpo && gpo->owner_pdev == pdev) {
-			xa_erase(&global_owner_xa, index);
-			kfree(gpo);
-			released++;
+		if (gpo && gpo->owner_pdev == pdev)
+			to_release++;
+	}
+
+	/* Pass 2: erase */
+	if (to_release) {
+		xa_for_each(&global_owner_xa, index, gpo) {
+			if (!gpo || gpo->owner_pdev != pdev)
+				continue;
+
+			gpo = xa_erase(&global_owner_xa, index);
+			if (gpo && !xa_is_value(gpo)) {
+				kfree(gpo);
+				released++;
+				if (!--to_release)
+					break; /* stop once all found are removed */
+			}
 		}
 	}
 
 	up_write(&global_owner_rwsem);
 
 	if (released)
-		dev_info(&pdev->dev, "Released %lu physical LED ownership claims\n", released);
+		dev_info(&pdev->dev,
+			 "Released %lu physical LED ownership claims\n",
+			 released);
 }
 
 static void phys_led_entry_release(struct kref *ref)
@@ -752,6 +761,7 @@ static void controller_destroy_phys_list(struct vcolor_controller *lvc)
  *	- Holding lvc->lock during this would violate lock ordering
  */
 static void controller_rebuild_phys_leds(struct vcolor_controller *lvc)
+	__must_hold(&lvc->lock)
 {
 	struct virtual_led *vled, **vled_snapshot;
 	unsigned int i, j, vled_count, actual_count;
@@ -1027,6 +1037,7 @@ static void apply_winner_to_channel(struct vcolor_controller *lvc,
 			}
 		} else {
 			strscpy(ple->winner_name, "(unnamed)", MAX_DEBUGFS_NAME);
+				ple->winner_name[0] = '\0';
 		}
 	#endif
 	}
@@ -2256,13 +2267,51 @@ static void virtual_led_destroy(struct virtual_led *vled)
 
 #ifdef CONFIG_DEBUG_FS
 
-#define SCNPRINTF_FIELD(out, len, size, name, format, value) \
-	do { \
-		if ((len) >= (size)) { \
-			break; \
-		} \
-		(len) += scnprintf((out) + (len), (size) - (len), name ": " format "\n", (value)); \
-	} while (0)
+/**
+ * scnprintf_field - Format a field into a buffer with bounds checking
+ * @out: Output buffer
+ * @len: Current buffer position (updated on success)
+ * @size: Total buffer size
+ * @name: Field name
+ * @format: Printf-style format string for value
+ * @value: Value to format
+ *
+ * Returns: Number of characters written, or 0 if buffer full
+ */
+static inline int scnprintf_field(char *out, int len, size_t size,
+				  const char *name, const char *format,
+				  u64 value)
+{
+	int written;
+
+	if (len >= size)
+		return 0;
+
+	written = scnprintf(out + len, size - len, "%s: ", name);
+	if (len + written >= size)
+		return 0;
+
+	written += scnprintf(out + len + written, size - len - written,
+			     format, value);
+	written += scnprintf(out + len + written, size - len - written, "\n");
+
+	return written;
+}
+
+/**
+ * scnprintf_field_str - Format a string field into a buffer
+ */
+static inline int scnprintf_field_str(char *out, int len, size_t size,
+				      const char *name, const char *value)
+{
+	int written;
+
+	if (len >= size)
+		return 0;
+
+	written = scnprintf(out + len, size - len, "%s: %s\n", name, value);
+	return written;
+}
 
 static int debugfs_simple_read(struct file *file, char __user *buf,
 			       size_t count, loff_t *ppos,
@@ -2312,62 +2361,49 @@ static int format_stats(void *data, char *out, size_t size)
 	mutex_unlock(&lvc->lock);
 
 	len = 0;
-	if (len >= size)
-		return len;
-	len += scnprintf(out + len, size - len, " ===Controller Stats===\n");
-	SCNPRINTF_FIELD(out, len, size, "Arbitration cycles", "%llu", arb_count);
-	SCNPRINTF_FIELD(out, len, size, "LED updates", "%llu", update_count);
-	SCNPRINTF_FIELD(out, len, size, "Last update", "%lld ms ago", last_update_ms);
 
-	if (len >= size)
-		return len;
+	len += scnprintf(out + len, size - len, "===Controller Stats===\n");
+	len += scnprintf_field(out, len, size, "Arbitration cycles", "%llu", arb_count);
+	len += scnprintf_field(out, len, size, "LED updates", "%llu", update_count);
+	len += scnprintf_field(out, len, size, "Last update", "%lld ms ago", last_update_ms);
+
 	len += scnprintf(out + len, size - len, "\n===Error Counters===\n");
-	SCNPRINTF_FIELD(out, len, size, "Allocation failures", "%llu", alloc_failures);
-	SCNPRINTF_FIELD(out, len, size, "Update buffer overflows", "%llu", buf_overflows);
-	SCNPRINTF_FIELD(out, len, size, "Rate limit hits", "%llu", ratelimit_hits);
-	SCNPRINTF_FIELD(out, len, size, "Global sequence", "%llu",
+	len += scnprintf_field(out, len, size, "Allocation failures", "%llu", alloc_failures);
+	len += scnprintf_field(out, len, size, "Update buffer overflows", "%llu", buf_overflows);
+	len += scnprintf_field(out, len, size, "Rate limit hits", "%llu", ratelimit_hits);
+	len += scnprintf_field(out, len, size, "Global sequence", "%llu",
 			atomic64_read(&lvc->global_sequence));
 
-	if (len >= size)
-		return len;
 	len += scnprintf(out + len, size - len, "\n===Arbitration Latency===\n");
-	SCNPRINTF_FIELD(out, len, size, "Min", "%llu ns", lvc->arb_latency_min_ns);
-	SCNPRINTF_FIELD(out, len, size, "Max", "%llu ns", lvc->arb_latency_max_ns);
-	SCNPRINTF_FIELD(out, len, size, "Avg", "%llu ns", arb_latency_avg_ns);
-	SCNPRINTF_FIELD(out, len, size, "Count", "%llu", lvc->arb_latency_count);
+	len += scnprintf_field(out, len, size, "Min", "%llu ns", lvc->arb_latency_min_ns);
+	len += scnprintf_field(out, len, size, "Max", "%llu ns", lvc->arb_latency_max_ns);
+	len += scnprintf_field(out, len, size, "Avg", "%llu ns", arb_latency_avg_ns);
+	len += scnprintf_field(out, len, size, "Count", "%llu", lvc->arb_latency_count);
 
-	if (len >= size)
-		return len;
 	len += scnprintf(out + len, size - len, "\n===Configuration===\n");
-	SCNPRINTF_FIELD(out, len, size, "Gamma correction", "%s",
+	len += scnprintf_field_str(out, len, size, "Gamma correction",
 			lvc->use_gamma_correction ? "enabled" : "disabled");
-	SCNPRINTF_FIELD(out, len, size, "Update batching", "%s",
+	len += scnprintf_field_str(out, len, size, "Update batching",
 			lvc->enable_update_batching ? "enabled" : "disabled");
-	SCNPRINTF_FIELD(out, len, size, "Update delay", "%u us",
+	len += scnprintf_field(out, len, size, "Update delay", "%u us",
 			lvc->update_delay_us);
-	SCNPRINTF_FIELD(out, len, size, "Max physical LEDs", "%u",
+	len += scnprintf_field(out, len, size, "Max physical LEDs", "%u",
 			lvc->max_phys_leds);
 
-	if (len >= size)
-		return len;
-	len += scnprintf(out + len, size - len, "Physical LED count: %llu/%u\n",
+	len += scnprintf(out + len, size - len, "\nPhysical LED count: %llu/%u\n",
 			 phys_count, lvc->update_buf.capacity);
-	SCNPRINTF_FIELD(out, len, size, "Removing", "%s",
+	len += scnprintf_field_str(out, len, size, "Removing",
 			atomic_read(&lvc->removing) ? "yes" : "no");
 
 	return len;
 }
 
-#ifdef CONFIG_DEBUG_FS
-
 static int format_vled_stats(void *data, char *out, size_t size)
 {
-	struct vcolor_controller *lvc;
+	struct vcolor_controller *lvc = data;
 	int len;
 	struct virtual_led *vled;
 	u64 win_rate;
-
-	lvc = data;
 
 	mutex_lock(&lvc->lock);
 
@@ -2384,44 +2420,40 @@ static int format_vled_stats(void *data, char *out, size_t size)
 				win_rate = 100;
 		}
 
-		if (len >= size)
-			return len;
 		len += scnprintf(out + len, size - len,
-				 " LED: %s ===(Mode: %s, Prio: %d)===\n",
+				 "\n===LED: %s (Mode: %s, Prio: %d)===\n",
 				 vled->name,
 				 vled->mode == VLED_MODE_STANDARD ? "standard" : "multicolor",
 				 vled->priority);
-		SCNPRINTF_FIELD(out, len, size, "Max brightness", "%u",
+		len += scnprintf_field(out, len, size, "Max brightness", "%u",
 				vled->cdev.max_brightness);
-		SCNPRINTF_FIELD(out, len, size, "Default trigger", "%s",
+		len += scnprintf_field_str(out, len, size, "Default trigger",
 				vled->cdev.default_trigger ? vled->cdev.default_trigger : "none");
-		SCNPRINTF_FIELD(out, len, size, "Brightness sets", "%llu",
+		len += scnprintf_field(out, len, size, "Brightness sets", "%llu",
 				vled->brightness_set_count);
-		SCNPRINTF_FIELD(out, len, size, "Intensity sets", "%llu",
+		len += scnprintf_field(out, len, size, "Intensity sets", "%llu",
 				vled->intensity_update_count);
-		SCNPRINTF_FIELD(out, len, size, "Blink requests", "%llu",
+		len += scnprintf_field(out, len, size, "Blink requests", "%llu",
 				vled->blink_requests);
-		SCNPRINTF_FIELD(out, len, size, "Sequence", "%llu", vled->sequence);
-		if (len >= size)
-			break;
+		len += scnprintf_field(out, len, size, "Sequence", "%llu", vled->sequence);
 		len += scnprintf(out + len, size - len,
 				 "Current brightness: %u/%u\n",
 				 vled->cdev.brightness, vled->cdev.max_brightness);
-		SCNPRINTF_FIELD(out, len, size, "Channels", "%u", vled->num_channels);
-		SCNPRINTF_FIELD(out, len, size, "Arbitration participations", "%llu",
+		len += scnprintf_field(out, len, size, "Channels", "%u", vled->num_channels);
+		len += scnprintf_field(out, len, size, "Arbitration participations", "%llu",
 				vled->arbitration_participations);
-		SCNPRINTF_FIELD(out, len, size, "Arbitration losses", "%llu",
+		len += scnprintf_field(out, len, size, "Arbitration wins", "%llu",
+				vled->arbitration_wins);
+		len += scnprintf_field(out, len, size, "Arbitration losses", "%llu",
 				vled->arbitration_losses);
-		SCNPRINTF_FIELD(out, len, size, "Win rate", "%llu%%\n", win_rate);
+		len += scnprintf_field(out, len, size, "Win rate", "%llu%%", win_rate);
 
-		if (len >= size)
-			return len;
 		len += scnprintf(out + len, size - len, "\n===vLED Error Counters===\n");
-		SCNPRINTF_FIELD(out, len, size, "Buffer allocation failures", "%llu",
+		len += scnprintf_field(out, len, size, "Buffer allocation failures", "%llu",
 				vled->buffer_allocation_failures);
-		SCNPRINTF_FIELD(out, len, size, "Intensity parse errors", "%llu",
+		len += scnprintf_field(out, len, size, "Intensity parse errors", "%llu",
 				vled->intensity_parse_errors);
-		SCNPRINTF_FIELD(out, len, size, "Rate limit drops", "%llu\n",
+		len += scnprintf_field(out, len, size, "Rate limit drops", "%llu",
 				vled->ratelimit_drops);
 	}
 
@@ -2484,8 +2516,8 @@ static int format_claimed_leds(void *data, char *out, size_t size)
 
 #define DEBUGFS_READ_FOP(name, formatter) \
 static ssize_t debugfs_##name##_read(struct file *file, char __user *buf, \
-			size_t count, loff_t *ppos) \
-			{ \
+				     size_t count, loff_t *ppos) \
+{ \
 	return debugfs_simple_read(file, buf, count, ppos, formatter); \
 } \
 static const struct file_operations debugfs_##name##_fops = { \
@@ -2753,8 +2785,6 @@ static void controller_destroy_debugfs(struct vcolor_controller *lvc)
 static inline void controller_setup_debugfs(struct vcolor_controller *lvc) {}
 static inline void controller_destroy_debugfs(struct vcolor_controller *lvc) {}
 #endif
-
-#endif /* CONFIG_DEBUG_FS */
 
 /*
  * Sysfs attributes for runtime controller configuration
@@ -3060,6 +3090,7 @@ static int leds_virtualcolor_probe(struct platform_device *pdev)
 	}
 
 	lvc->ple_snapshot_capacity = lvc->max_phys_leds;
+	lvc->ple_usage_bitmap_capacity = lvc->max_phys_leds;
 	lvc->ple_snapshot = devm_kcalloc(dev, lvc->ple_snapshot_capacity,
 					 sizeof(*lvc->ple_snapshot), GFP_KERNEL);
 	if (!lvc->ple_snapshot) {
