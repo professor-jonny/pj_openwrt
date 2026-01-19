@@ -268,7 +268,6 @@ config host
 	option ip '192.168.1.40'
 
 config host
-	option ip '192.168.1.194'
+	option instance 'kids_dns'
 	option name 'Justin-Tablet'
 	list mac '90:09:17:53:98:3F'
-

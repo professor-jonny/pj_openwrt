@@ -23,6 +23,8 @@ config banip 'global'
 	list ban_ifv6 'wan6'
 	list ban_trigger 'wan'
 	list ban_trigger 'wan6'
+	list ban_ignorelist '192.168.1.0/24'   # adults_lan
+        list ban_ignorelist '192.168.2.0/24'   # kids_lan
 	option ban_fetchretry '5'
 	option ban_nicelimit '0'
 	option ban_filelimit '1024'
@@ -42,4 +44,3 @@ config banip 'global'
 	list ban_feed 'doh'
 	list ban_feed 'proxy'
 	list ban_feed 'vpn'
-

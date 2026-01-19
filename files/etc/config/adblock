@@ -30,4 +30,3 @@ config adblock 'global'
 	list adb_safesearchlist 'pixabay'
 	list adb_sources 'stevenblack'
 	list adb_sources 'utcapitole'
-

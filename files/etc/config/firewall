@@ -277,7 +277,7 @@ config redirect
 
 config redirect
 	option target 'DNAT'
-	option name 'dot hijack (kids_lan 853'
+	option name 'dot hijack (kids_lan 853)'
 	option src 'kids_zone'
 	option src_dport '853'
 	option dest_port '853'
@@ -307,4 +307,3 @@ config redirect
 	option src 'wan_zone'
 	option src_dport '10107'
 	option dest_ip '192.168.1.10'
-
